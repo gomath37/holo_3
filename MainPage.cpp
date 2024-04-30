@@ -9,6 +9,8 @@
 #include "MainPage.h"
 #include "MainPage.g.cpp"
 
+#include <winrt/Windows.Storage.h>
+
 using namespace winrt;
 using namespace Windows::UI::Xaml;
 
@@ -16,6 +18,8 @@ using namespace Windows::UI::Xaml;
 using namespace Windows::Foundation;
 using namespace Windows::Media::Capture;
 using namespace Windows::Media::Capture::Frames;
+
+using namespace winrt::Windows::Storage;
 
 namespace winrt::holo_3::implementation
 {
@@ -35,37 +39,24 @@ namespace winrt::holo_3::implementation
         //<TextBlock x:Name="myTextBlock" Text="Hello, Windows 10!" />
         //myTextBlock().Text(L"Hello World");
 
-        init_apartment(winrt::apartment_type::single_threaded);
+        //init_apartment(winrt::apartment_type::single_threaded);
 
-        try {
-            MediaCapture mediaCapture{};
-            MediaCaptureInitializationSettings settings{};
-            settings.StreamingCaptureMode(StreamingCaptureMode::Video);
+        auto captureUI = CameraCaptureUI();
+        captureUI.PhotoSettings().Format(CameraCaptureUIPhotoFormat::Jpeg);
+        captureUI.PhotoSettings().CroppedSizeInPixels({ 800, 600 });
 
-            mediaCapture.InitializeAsync(settings).get();
-            auto frameSources = mediaCapture.FrameSources();
-            MediaFrameSource frameSource = nullptr;
-
-            for (auto&& source : frameSources) {
-                auto sourceInfo = source.Value().Info();
-                auto sourceKind = sourceInfo.SourceKind();
-                if (sourceKind == MediaFrameSourceKind::Color) {
-                    frameSource = source.Value();
-                    break;
+        captureUI.CaptureFileAsync(CameraCaptureUIMode::Photo).Completed([](IAsyncOperation<StorageFile> asyncInfo, AsyncStatus status)
+            {
+                auto file = asyncInfo.GetResults();
+                if (file)
+                {
+                    // Use file.Path() to get the file path
+                    // Optionally, display the photo in the UI
+                    // statusTextBlock().Text(L"Picture Taken.");
                 }
-            }
+            });
 
-            if (frameSource != nullptr) {
-                statusTextBlock().Text(L"Color video frame source found.");
-            }
-            else {
-                statusTextBlock().Text(L"Color video frame source not found.");
-            }
-        }
-        catch (const winrt::hresult_error& ex) {
-            statusTextBlock().Text(L"Initialization failed with error: " + ex.message());
-        }
 
-        uninit_apartment();
+        //uninit_apartment();
     }
 }
